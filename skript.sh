@@ -35,3 +35,5 @@ then
 else
     qemu-system-i386 -m 4096k -drive if=floppy,index=0,format=raw,file=floppy.img
 fi
+
+#ein Kommentar
