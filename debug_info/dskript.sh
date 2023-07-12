@@ -21,6 +21,7 @@
 # tui reg general
 # info functions
 # c continue, aber kein  singlestep :/
+# x/1b 0x1b5ee info memloc
 
 
 

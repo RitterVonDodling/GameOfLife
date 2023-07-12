@@ -5,8 +5,8 @@
 ;   0x0504 Speicherort PosMask
 ;   0x0506 - 0x0508 Zwischenspeicher Calcraster
 ;   0x050C - 0x050D Zwischenspeicher Iteration Calcraster
-;   0x05FF abwärts Stack
 ;   0x0600 - 0x0900 Programm
+;   0x07B00 - 0x07BFF abwärts Stack
 ;0x07C00 - 0x07DFF Verweis Bootloader
 ;0x07E00 -- 0x9FFFF verfügbarer Speicher
 ;   => Golzwischenspeicher
@@ -56,7 +56,7 @@ randint:
 
 start:
 setupstack:
-    mov ax, 0x0500
+    mov ax, 0x07B0
     mov ss, ax
     mov sp, 0x00FF
 
@@ -123,7 +123,7 @@ printvv:
         cmp cx, 0
         jne forprintvv
 
-;call kbhit
+call kbhit
 
 calcraster:
     mov cx, 0x9600
@@ -144,7 +144,7 @@ calcraster:
         ;cmp cx, 81
         ;jl xorpunktobenmitte
         mov ax, [es:di-81]  ;cx -81 = obenlinks
-        ror ax, 1           ;N1 in ah
+        ror ax, 1          ;N1 in ah
         xorpunktobenmitte:
         ;cmp cx, 80
         ;jl xorpunktlinks
@@ -167,7 +167,7 @@ calcraster:
         ;cmp cx, 38399
         ;je xorpunktladenende  ;
         xorpunktrechts:
-        mov bx, [es:di+1]   ;rechts
+        mov bx, [es:di]   ;rechts
         rol bx, 1           ;N5 in bl
         xorpunktuntenlinks:
         ;cmp  cx, 38321kbhit
