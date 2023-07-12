@@ -19,8 +19,6 @@ while(zeile := program.read(1)):
     inhalt_Floppy_Alt.extend(zeile)
 program.close()
 
-#print(''.join('{:02x}'.format(x) for x in inhalt_Floppy_Alt[0x4400:0x4408]))
-
 #Lade Binary und schreibe in Floppy RAM
 program = open(str_File,"rb")
 while(zeile := program.read(1)):
