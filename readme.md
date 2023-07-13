@@ -1,5 +1,5 @@
 # cgol
-creating my own os only for conways game of life
+creating my own os only for conways game of life as a hobby
 
 
 ## special thanks to: 
