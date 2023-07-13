@@ -6,3 +6,4 @@ __pycache__
 mitschrift
 dskript.sh
 result.bin
+.gdbinit
