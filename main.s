@@ -123,7 +123,7 @@ printvv:
         cmp cx, 0
         jne forprintvv
 
-call kbhit
+;call kbhit
 
 calcraster:
     mov cx, 0x9600

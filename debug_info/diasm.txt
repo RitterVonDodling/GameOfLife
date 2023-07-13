@@ -28,7 +28,7 @@
 00000042  C3                ret
 00000043  B8B007            mov ax,0x7b0
 00000046  8ED0              mov ss,ax
-00000048  BCFF00            mov sp,0xff
+00000048  BC0000            mov sp,0x0
 0000004B  B81200            mov ax,0x12
 0000004E  CD10              int 0x10
 00000050  06                push es
