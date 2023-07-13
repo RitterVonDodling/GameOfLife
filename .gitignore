@@ -1,2 +1,8 @@
 floppy*
-
+GameOfLife.code-workspace
+__pycache__
+*.pyc
+*.jpg
+mitschrift
+dskript.sh
+result.bin
