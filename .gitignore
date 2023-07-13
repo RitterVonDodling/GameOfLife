@@ -3,7 +3,7 @@ GameOfLife.code-workspace
 __pycache__
 *.pyc
 *.jpg
-mitschrift
+debug_info/mitschrift
 dskript.sh
 result.bin
 .gdbinit
