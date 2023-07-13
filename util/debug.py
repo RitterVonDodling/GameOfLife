@@ -1,4 +1,3 @@
-import array
 
 def binstrtohex(inputstr):
     i = len(inputstr)
