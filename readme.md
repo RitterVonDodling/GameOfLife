@@ -9,14 +9,15 @@ cells are not calculated individually, but 8 at a time
 not working - searching for bugs in the algorithm
 last fixed: forgot to fetch N6
 more to come
+comments are mostly in german, change incoming
 
-### old
+## old
 in old/ is an older working version for ax 0x0013 int0x10
 and individual cell calculation
 
 ## special thanks to: 
-- https://github.com/nanobyte-dev
-- https://github.com/alexfru/BootProg
+- https://github.com/nanobyte-dev       for 
+- https://github.com/alexfru/BootProg   for the bootloader
 - https://wiki.osdev.org
 
 ### license
