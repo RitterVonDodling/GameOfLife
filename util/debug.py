@@ -1,5 +1,20 @@
 import array
 
+def binstrtohex(inputstr):
+    i = len(inputstr)
+    bitwert = 1
+    ergebnis = 0
+    for a in range(0,i):
+        ergebnis = ergebnis + (int(inputstr[-1])*bitwert)
+        inputstr = inputstr[:-1]
+        bitwert = bitwert*2
+    outputstr = hex(ergebnis)
+    return outputstr
+
+def extractfromarray(Matrix,start: int,end: int):
+    retstr = str(''.join([f'{Matrix[a]}' for a in range(start,end)]))
+    return retstr
+
 def layout(i,bytef_Memory):
     obennachbarlinks = str(f'{bytef_Memory[i-82]:08b}')
     obenlinks = str(f'{bytef_Memory[i-81]:08b}')
@@ -35,12 +50,31 @@ def layout(i,bytef_Memory):
         summe[x] = int(Matrix[0][x]) + int(Matrix[0][x+1]) + int(Matrix[0][x+2]) 
         summe[x] += int(Matrix[1][x]) + int(Matrix[1][x+2])
         summe[x] += int(Matrix[2][x]) + int(Matrix[2][x+1]) + int(Matrix[2][x+2])
+    
     print(obenlinks+"|"+obenmitte+"|"+obenrechts)
-    #print("---------------------------------")
     print(links+"|"+'\033[93m'+str(f'{bytef_Memory[i]:08b}')+'\033[1;37m'+"|"+rechts)
-    #print("---------------------------------")
     print(untenlinks+"|"+untenmitte+"|"+untenrechts)
     print("---------------------------------")
     print('Anzahl   ', *summe, sep='')
     print("WertNeu: "+str(f'{bytef_Memory[i+40960]:08b}')+"---------")
     print("Neue Addresse: "+ hex(i+40960))
+    print("")
+    print(hex(i-81)+"|"+hex(i-80)+"|"+hex(i-79))
+    print(hex(i-1)+"|"+hex(i)+"|"+hex(i+1))
+    print(hex(i+79)+"|"+hex(i+80)+"|"+hex(i+81))
+
+    print("")
+
+    Nachbar = []
+    Nachbar.append(extractfromarray(Matrix[0],0,8))
+    Nachbar.append(extractfromarray(Matrix[0],1,9))
+    Nachbar.append(extractfromarray(Matrix[0],2,10))
+    Nachbar.append(extractfromarray(Matrix[1],0,8))
+    Nachbar.append(extractfromarray(Matrix[1],2,10))
+    Nachbar.append(extractfromarray(Matrix[2],0,8))
+    Nachbar.append(extractfromarray(Matrix[2],1,9))
+    Nachbar.append(extractfromarray(Matrix[2],2,10))
+
+
+    for b in range(1,9):
+        print("N"+str(b)+": " + Nachbar[b-1] + "\t" +binstrtohex(Nachbar[b-1]))

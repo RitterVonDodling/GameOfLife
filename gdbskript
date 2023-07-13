@@ -1,5 +1,5 @@
-br *0x0600
-br *0x06B3
+#br *0x0600
+#br *0x06B3
 set $i=0
 set $end=90
 while($i<$end)

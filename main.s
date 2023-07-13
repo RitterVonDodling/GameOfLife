@@ -58,7 +58,7 @@ start:
 setupstack:
     mov ax, 0x07B0
     mov ss, ax
-    mov sp, 0x00FF
+    mov sp, 0x00
 
 setvidgrp:
     mov ax, 0x0012     ;Auflösung 640x480x16
@@ -167,10 +167,12 @@ calcraster:
         ;cmp cx, 38399
         ;je xorpunktladenende  ;
         xorpunktrechts:
-        mov bx, [es:di]   ;rechts
+        mov bx, [es:di]     ;rechts
         rol bx, 1           ;N5 in bl
+        mov dx, [es:di+79]  ;untenlinks
+        ror dx, 1           ;N6 in dh
         xorpunktuntenlinks:
-        ;cmp  cx, 38321kbhit
+        ;cmp  cx, 38321
         xor bl, dh          ;x3 in bl
         ;cmp cx, 38320
         ;jge xorpunktletztezeile
@@ -296,7 +298,7 @@ cpraster:
     mov cx, 0x9600
     forcpraser:
         dec cx
-        mov dx, 0x1200
+        mov dx, 0x1200      ;SEGMENT neue CELL
         mov es, dx
         mov di, cx
         mov al, [es:di]
