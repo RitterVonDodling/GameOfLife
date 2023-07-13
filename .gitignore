@@ -4,6 +4,7 @@ __pycache__
 *.pyc
 *.jpg
 debug_info/mitschrift
-dskript.sh
-result.bin
+debug_info/dskript.sh
+*result.bin
 .gdbinit
+gdbskript
