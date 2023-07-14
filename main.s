@@ -6,12 +6,12 @@
 ;   0x0506 - 0x0508 Zwischenspeicher Calcraster
 ;   0x050C - 0x050D Zwischenspeicher Iteration Calcraster
 ;   0x0600 - 0x0900 Programm
-;   0x07B00 - 0x07BFF abwärts Stack
 ;0x07C00 - 0x07DFF Verweis Bootloader
 ;0x07E00 -- 0x9FFFF verfügbarer Speicher
 ;   => Golzwischenspeicher
 ;   => 0x08000 -- 0x12000 für 640*480 8bit Einträge (0x11600)
 ;   => 0x12000 -- 0x1B600 für calcraster
+;   => 0x90000 -- 0x9FFFF für stack
 ;0x07E0:0002 => 0x07E02
 ;0x7E00:0002 => 0x7E002
 
@@ -29,11 +29,10 @@ randint:
     push es
     mov ax, 0x0000          ;offset auf 0
     mov es, ax
-    mov ax, 0x0500
+    mov ax, 0x0500        ;Speicherort SEED
     mov di, ax
-    mov ah, [es:di]        ;Lädt SEED aus RAM
-    mov al, [es:di]        ;Lädt SEED aus RAM
-    mov dx, 7           ;RMUL
+    mov ax, [es:di]        ;Lädt SEED aus RAM
+    mov dx, 7              ;RMUL
     mul dx
     mov dx, 831           ;RADD
     add ax, dx
@@ -41,9 +40,9 @@ randint:
     mov dx, 0x0000          
     div cx                  ;dx enthält modulus, ax dividend
     mov ax, dx
-    mov bx, 0x0502
+    mov bx, 0x0502        ;Speicherort RNG
     mov di, bx
-    mov [es:di], ax
+    mov [es:di], ax       ;Speicher RNG
     mov bx, 0x0500          ;Speichtert RNG Ergebnis im RAM
     mov di, bx
     mov ax, [es:di]         ;Lädt SEED aus RAM
@@ -56,7 +55,7 @@ randint:
 
 start:
 setupstack:
-    mov ax, 0x07B0
+    mov ax, 0x9000
     mov ss, ax
     mov sp, 0x00
 
@@ -78,7 +77,7 @@ gettime:
 ;call kbhit
 
 initraster:
-    mov cx, 38400
+    mov cx, 0x9600
     forinitraster:
         push cx
         call randint
@@ -108,18 +107,18 @@ printvv:
     mov cx, 0x9600 ;38400 in Dez
     forprintvv:
         dec cx
-        mov ax, 0x0800
+        mov ax, OFFSET
         mov es, ax
         mov dx, 0x0000
         mov di, cx
-        mov bl, [es:di]     ;Lädt CELL
+        mov bx, [es:di]     ;Lädt CELL
         mov ax, 0xA000      ;OFFSET GRFMEM
         mov es, ax          ;OFFSET -> ExtraSegment
         mov dx, 0x03C4      ;i/o port für VGA
         mov ax, 0x0F02      ;ah Farbe, al Kommando Bitlane (02 = write)
         out dx, ax          ;gebe ax an port dx aus       
-        mov al, bl          ;bitmask CELL 
-        stosb               ;sende inhalt al an es:di
+        mov ax, bx          ;bitmask CELL
+        mov [es:di], ax
         cmp cx, 0
         jne forprintvv
 
@@ -181,14 +180,14 @@ calcraster:
         rol dx, 1           ;N8 in dl
         xorpunktletztezeile:
         xor bh, dl          ;x4 in bh
-        mov dh, bl          ;
-        and bl, bh          ;xa2 in bh
+        mov dh, bl          ;cp x3 in dh
+        and bl, bh          ;xa2 in bl
         xor dh, bh          ;xx2 in dh
         xorpunktladenende:
         xor ah, bl          ;xax1 in ah
-        mov bh, al          
+        mov bh, al          ;cp xx1 in bh
         and al, dh          ;xxa1 in al
-        xor bh, dh          ;xxx1 in bl
+        xor bh, dh          ;xxx1 in bh
         push cx             ;PUSH 3 -> 0xEE   
         mov cx, 0x0000
         mov es, cx
@@ -208,7 +207,7 @@ calcraster:
         mov ax, [es:di-81]  ;obenlinks
         ror ax, 1           ;N1 in ah
         mov bl, [es:di-80]  ;N2 in bl obenmitte
-        and ah, bl          ;a1 in al
+        and ah, bl          ;a1 in ah
         andpunktobenmitte:
         ;cmp cx, 80
         ;jl andpunktlinks
@@ -233,8 +232,8 @@ calcraster:
         mov dx, [es:di+80]  ;untenrechts
         rol dx, 1           ;N8 in dl
         mov dh, bl          ;cp a3 -> dh
-        and bh, dh          ;a4 in bl
-        and bl, bh          ;aa2 in bh
+        and bh, dh          ;a4 in bh
+        and bl, bh          ;aa2 in bl
         xor dh, bh          ;ax2 in dh
         xor ah, bl          ;aax1 in ah
         mov bl, al          
@@ -246,12 +245,13 @@ calcraster:
         mov cx, 0x0000
         mov es, cx
         mov cx, 0x0508
+        mov di, cx
         mov bh, [es:di]     ;xax1 in bh
-        mov dh, bh          
+        mov dh, bh          ;cp xax1 in dh
         xor bh, bl          ;ANDx1 in bh
-        mov dl, [es:di-1]     ;xxa1 in dl
+        mov dl, [es:di-1]   ;xxa1 in dl
         xor bh, dl          ;ANDxx1 in bh
-        mov dl, [es:di-2]     ;xxx1 in dl
+        mov dl, [es:di-2]   ;xxx1 in dl
         mov cx, OFFSET
         mov es, cx
         pop cx              ;POP 4 <- SP 0xEE
@@ -263,7 +263,7 @@ calcraster:
         and bh, al          ;ANDxxaaa1 in bh
         ;ENDE AND MASK --> BH
         ;START OR MASK
-        not dl
+        not dl              ;NOT ANDn1 -->	xxx1
         and dh, dl          ;ORa1 in dh
         and bl, dl          ;ORaa1 in bl
         xor bl, dh          ;ORaax1 in bl
@@ -275,19 +275,18 @@ calcraster:
         ;neue an anderer addresse speichern
         mov dx, 0x0000
         mov es, dx
-        mov dx, 0x050C      
+        mov dx, 0x050C
         mov di, dx
         mov cx, [es:di]     ;LOAD Iteration CX = +-0
         mov di, cx
-        mov dx, 0x7e0
+        mov dx, OFFSET
         mov es, dx
         mov al, [es:di]     ;ALTE CELL
-        ;sub al, 7           ;NEUE CELL TEST
         and al, bh
         or al, bl           ;NEUE CELL
         mov dx, 0x1200
         mov es, dx
-        mov [es:di], al     ;
+        mov [es:di], al     ;Speichere neue cell
         cmp cx, 0
         jne forcalcraser
 

@@ -1,4 +1,3 @@
-
 def binstrtohex(inputstr):
     i = len(inputstr)
     bitwert = 1
