@@ -158,8 +158,8 @@ calcraster:
         ror dx, 1           ;N4 in dh
         xorpunktmitte:
         xor bl, dh          ;x2 in bl
-        mov al, ah          ;x1 in al
-        and ah, bl          ;cp xa1 in ah
+        mov al, ah          ;cp x1 in al
+        and ah, bl          ;xa1 in ah
         xor al, bl          ;xx1 in al
         mov bx, 0x0000
         mov dx, 0x0000
@@ -232,7 +232,7 @@ calcraster:
         mov dx, [es:di+80]  ;untenrechts
         rol dx, 1           ;N8 in dl
         mov dh, bl          ;cp a3 -> dh
-        and bh, dh          ;a4 in bh
+        and bh, dl          ;a4 in bh
         and bl, bh          ;aa2 in bl
         xor dh, bh          ;ax2 in dh
         xor ah, bl          ;aax1 in ah
