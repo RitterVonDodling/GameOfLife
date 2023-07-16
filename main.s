@@ -20,7 +20,6 @@
 %define OFFSET 0x0800
 
 BITS 16
-;org 0x0600
 
 jmp start
 
@@ -74,8 +73,6 @@ gettime:
     mov [es:di], dl        ;MemMap erstellen und wert anpassen! DX = Sekunden
     pop es
 
-;call kbhit
-
 initraster:
     mov cx, 0x9600
     forinitraster:
@@ -104,25 +101,28 @@ initraster:
 ;0x0F Weiß
 
 printvv:
-    mov cx, 0x9600 ;38400 in Dez
+    mov cx, 0x9600      ;38400 in Dez       
+    mov bx, 0xA000      ;SEGMENT GRFMEM
+    mov es, bx          ;
+    mov bx, OFFSET      ;
+    push ds
+    push si
+    mov ds, bx
+    xor bx, bx
+    mov di, cx
+    mov si, cx
+    mov dx, 0x03C4      ;i/o port für VGA
+    mov ax, 0x0F02      ;ah Farbe, al Kommando Bitlane (02 = write)
+    out dx, ax          ;gebe ax an port dx aus
     forprintvv:
-        dec cx
-        mov ax, OFFSET
-        mov es, ax
-        mov dx, 0x0000
-        mov di, cx
-        mov bx, [es:di]     ;Lädt CELL
-        mov ax, 0xA000      ;OFFSET GRFMEM
-        mov es, ax          ;OFFSET -> ExtraSegment
-        mov dx, 0x03C4      ;i/o port für VGA
-        mov ax, 0x0F02      ;ah Farbe, al Kommando Bitlane (02 = write)
-        out dx, ax          ;gebe ax an port dx aus       
-        mov ax, bx          ;bitmask CELL
-        mov [es:di], ax
-        cmp cx, 0
+        sub di, 2
+        sub si, 2
+        mov bx, [ds:si]     ;bx <- [CELL]
+        mov [es:di], bx     ;[GRF] <- bx
+        cmp di, 0
         jne forprintvv
-
-;call kbhit
+    pop si
+    pop ds
 
 calcraster:
     mov cx, 0x9600
@@ -290,27 +290,29 @@ calcraster:
         cmp cx, 0
         jne forcalcraser
 
-;call kbhit
-;jmp gettime
-
 cpraster:
+    push ds
+    push si
     mov cx, 0x9600
+    mov di, cx
+    mov si, cx
+    mov dx, 0x1200
+    mov es, dx
+    mov dx, OFFSET
+    mov ds, dx
     forcpraser:
-        dec cx
-        mov dx, 0x1200      ;SEGMENT neue CELL
-        mov es, dx
-        mov di, cx
-        mov al, [es:di]
-        mov dx, OFFSET
-        mov es, dx
-        mov [es:di], al
-        cmp cx, 0
+        sub si, 2
+        sub di, 2
+        mov ax, [es:di]     ;ax <- [NEW CELL]
+        mov [ds:si], ax     ;[CELL] <- ax
+        cmp di, 0
         jne forcpraser
+    pop si
+    pop ds
 
-;call kbhit
 jmp printvv
 
 kbhit:
 	mov ah, 0x00	; read keyboard, blocking
 	int 0x16
-    ret
+	ret
