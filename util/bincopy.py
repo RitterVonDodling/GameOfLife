@@ -7,7 +7,7 @@ if sys.argv[1] == "help":
 #initialisiere Variablen
 str_File = sys.argv[1]
 str_Floppy = sys.argv[2]
-int_StartProgramAddress = 0x4400
+int_StartProgramAddress = int(sys.argv[3])
 i = 0
 inhalt_Programm = bytearray()
 inhalt_Floppy_Alt = bytearray()
