@@ -1,10 +1,13 @@
 ;0x00500 -- 0x07BFF freier Speicher
 ;   => SEED und andere Zwischenspeicher
-;   0x0500 speicherort SEED
+;   
 ;   0x0502 speicherort RNG
 ;   0x0504 Speicherort PosMask
 ;   0x0506 - 0x0508 Zwischenspeicher Calcraster
 ;   0x050C - 0x050D Zwischenspeicher Iteration Calcraster
+;   0x050E SEED
+;   0x0510 S2
+;   0x0512 S3
 ;   0x0600 - 0x0900 Programm
 ;0x07C00 - 0x07DFF Verweis Bootloader
 ;0x07E00 -- 0x9FFFF verfügbarer Speicher
@@ -18,39 +21,134 @@
 ; seltsames Zeug 0x104FE
 
 %define OFFSET 0x0800
+%define RNGADDR 0x0502
+%define SEEDADDR 0x050E
+%define S2ADDR 0x0510
+%define S3ADDR 0x0512
+%define RMUL 39157
+%define RADD 43973
+%define RDIV 30539
 
 BITS 16
 
 jmp start
 
 randint:
-    ;((SEED x RMUL)+RADD)/RDIV
+; Wichmann–Hill PRNG
+;   [r, s1, s2, s3] = function(s1, s2, s3) is
+;     // s1, s2, s3 should be random from 1 to 30,000. Use clock if available.
+;     s1 := 171 × mod(s1, 177) − 2 × floor(s1 / 177)
+;     s2 := 172 × mod(s2, 176) − 35 × floor(s2 / 176)
+;     s3 := 170 × mod(s3, 178) − 63 × floor(s3 / 178)
+
+;     r := mod(s1/30269 + s2/30307 + s3/30323, 1)
+
+;       s1 = SEED
+;       s2 = SEED*SEED[8-24]
+;       s3 = S2*S2[8-24]
+
     push es
-    mov ax, 0x0000          ;offset auf 0
+    mov ax, 0x0000                  ;offset auf 0
     mov es, ax
-    mov ax, 0x0500        ;Speicherort SEED
-    mov di, ax
-    mov ax, [es:di]        ;Lädt SEED aus RAM
-    mov dx, 7              ;RMUL
-    mul dx
-    mov dx, 831           ;RADD
-    add ax, dx
-    mov cx, 53           ;RDIV
-    mov dx, 0x0000          
-    div cx                  ;dx enthält modulus, ax dividend
+    ; AB HIER S1 S2 und S3 bestimmen
+    xor ax, ax
+    mov ax, [SEEDADDR]              ;Lädt SEED aus RAM
+    push ax
+    xor dx, dx
+    mov bx, RMUL
+    mul bx                          ;DX:AX = AX * BX
+    mov al, ah
+    mov ah, dl
+    mov [S2ADDR], ax
+    mul ax 
+    mov al, ah
+    mov ah, dl
+    mov [S3ADDR], ax
+    ;AB HIER S1 BERECHNEN
+    xor ax, ax
+    mov ax, [SEEDADDR]
+    mov bx, 177
+    xor dx, dx
+    div bx
+    mov cx, 2
+    mul cx
+    push ax ; ERGEBNIS FLOOR TEIL           PUSH 1
+    mov ax, [SEEDADDR]
+    xor dx, dx
+    div bx
     mov ax, dx
-    mov bx, 0x0502        ;Speicherort RNG
-    mov di, bx
-    mov [es:di], ax       ;Speicher RNG
-    mov bx, 0x0500          ;Speichtert RNG Ergebnis im RAM
-    mov di, bx
-    mov ax, [es:di]         ;Lädt SEED aus RAM
-    inc ax                  ;SEED++
-    mov bx, 0x0500
-    mov di, bx
-    mov [es:di], ax        ;SEED zurückspeichern
+    mov cx, 171
+    mul cx
+    pop bx                      ;POP 1
+    sub ax, bx
+    mov [SEEDADDR], ax
+    ; AB HIER S2 Berechnen  s2 := 172 × mod(s2, 176) − 35 × floor(s2 / 176)
+    xor ax, ax
+    mov ax, [S2ADDR]
+    mov bx, 176
+    xor dx, dx
+    div bx
+    mov cx, 35
+    mul cx
+    push ax             ;PUSH 2
+    mov ax, [S2ADDR]
+    xor dx, dx
+    div bx
+    mov ax, dx
+    mov cx, 172
+    mul cx
+    pop bx              ;POP 2
+    sub ax, bx
+    mov [S2ADDR], ax
+    ; AB HIER S3 BERECHNEN   s3 := 170 × mod(s3, 178) − 63 × floor(s3 / 178)
+    xor ax, ax
+    mov ax, [S3ADDR]
+    mov bx, 178
+    xor dx, dx
+    div bx
+    mov cx, 63
+    mul cx
+    push ax                 ;PUSH 3
+    mov ax, [S3ADDR]
+    xor dx, dx
+    div bx
+    mov ax, dx
+    mov cx, 170
+    mul cx
+    pop bx              ;POP 3
+    sub ax, bx
+    mov [S3ADDR], ax
+    ;AB HIER R BESTIMMEN    r := mod(s1/30269 + s2/30307 + s3/30323, 1)
+    mov bx, 30323
+    xor dx, dx
+    div bx
+    mov [S3ADDR], dx
+    mov ax, [S2ADDR]
+    mov bx, 30307
+    xor dx, dx
+    div bx
+    mov [S2ADDR], dx
+    mov ax, [SEEDADDR]
+    mov bx, 30269
+    xor dx, dx
+    div bx
+    mov [SEEDADDR], dx
+    mov ax, dx
+    mov bx, [S2ADDR]
+    add ax, bx
+    mov bx, [S3ADDR]
+    add ax, bx
+    ; ERGEBNIS SPEICHERN
+
+
+    pop bx
+    inc bx
+    mov [SEEDADDR], bx
+    ; mov ax, 0x0808
+    mov [RNGADDR], ax               ;Speicher RNG
     pop es
     ret
+
 
 start:
 setupstack:
@@ -68,9 +166,7 @@ gettime:
     mov es, ax                  ;erfasst aktuelle bios zeit
     mov ax, 0x0000
     int 0x1A
-    mov bx, 0x0500
-    mov di, bx
-    mov [es:di], dl        ;MemMap erstellen und wert anpassen! DX = Sekunden
+    mov [SEEDADDR], dx        ;MemMap erstellen und wert anpassen! DX = Sekunden
     pop es
 
 initraster:
@@ -80,15 +176,16 @@ initraster:
         call randint
         pop cx
         dec cx
+        dec cx
         mov bx, cx
         mov di, cx
         push ds
         mov ax, 0x0000
         mov ds, ax
-        mov dl, [0x0502] ;LOAD RANDINT
+        mov dx, [RNGADDR]    ;LOAD RANDINT
         mov ax, OFFSET
         mov es, ax
-        mov [es:di], dl
+        mov [es:di], dx
         pop ds
         cmp cx, 0
         jnz forinitraster
@@ -123,6 +220,8 @@ printvv:
         jne forprintvv
     pop si
     pop ds
+
+    ; call kbhit
 
 calcraster:
     mov cx, 0x9600

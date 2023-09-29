@@ -52,7 +52,6 @@ do
     then
         nasm -f bin -g -O0 -o boot.bin $var
         python3 ./util/bincopy.py boot.bin $IMAGEFILE 0
-        python3 ./util/bincopy.py STARTUP.BIN $IMAGEFILE 512
         BOOTSTAN=0
     fi
 
