@@ -6,6 +6,8 @@ IMAGEFILE="floppy.img"
 IMAGESTAN=0
 BOOTFILE=""
 BOOTSTAN=0
+MAINFILE="main.s"
+MAINSTAN=0
 
 
 for var in "$@"
@@ -19,6 +21,7 @@ do
         echo Parameter -demo ohne Compilierung und Vollbild
         echo Parameter -f image.img für Start mit anderem Image
         echo Parameter -b boot.s für compilierung und änderung des bootsektors
+        echo Parameter -m main.s für compilierung und änderung der zu ladenden Datei
         exit 0
     fi
     
@@ -35,6 +38,7 @@ do
     if [ $var == "-demo" ]
     then
         DEMO="TRUE"
+        COMPILE="FALSE"
     fi
 
     if [ $IMAGESTAN == 1 ]
@@ -52,6 +56,7 @@ do
     then
         nasm -f bin -g -O0 -o boot.bin $var
         python3 ./util/bincopy.py boot.bin $IMAGEFILE 0
+        python3 ./util/bincopy.py STARTUP.BIN $IMAGEFILE 512
         BOOTSTAN=0
     fi
 
@@ -60,12 +65,24 @@ do
         BOOTSTAN=1
     fi
 
+    if [ $MAINSTAN == 1 ]
+    then
+        MAINFILE=$var
+        MAINSTAN=0
+    fi
+
+    if [ $var == "-m" ]
+    then
+        MAINSTAN=1
+        COMPILE="TRUE"
+    fi
+
 done
 
 if [ $COMPILE == "TRUE" ]
 then
-    nasm -f bin -g -O0 -o STARTUP.BIN main.s
-    python3 util/bincopy.py STARTUP.BIN $IMAGEFILE 512
+    nasm -f bin -g -O0 -o STARTUP.BIN $MAINFILE
+    python3 ./util/bincopy.py STARTUP.BIN $IMAGEFILE 512
 fi
 
 if [ $DEMO == "TRUE" ]
