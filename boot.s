@@ -8,7 +8,6 @@ EndMsg:
 
 main:
 ;clear flags
-cli
 cld
 
 LoadErrMsg:

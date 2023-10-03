@@ -93,7 +93,6 @@ fi
 if [ $DEBUG == "TRUE" ]
 then
     ndisasm -b 16 STARTUP.BIN > debug_info/diasm.txt
-    #bochs -f debug_info/bochs.conf
     qemu-system-i386 -s -S -m 1024k -drive if=floppy,index=0,format=raw,file=$IMAGEFILE
 else
     qemu-system-i386 -vga std $DEMOFLAG -m 1024k -drive if=floppy,index=0,format=raw,file=$IMAGEFILE
