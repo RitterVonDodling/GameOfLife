@@ -37,10 +37,9 @@
 ;dw def word 16bit
 ;dd def double 32bit
 
+
 ;Bootloader Address
 [org 0x7c00]
-
-
 
 ;equ == const
 CODE_SEG equ code_descriptor - GDT_Start
@@ -49,12 +48,25 @@ DATA_SEG equ data_descriptor
 setvidgrp:
 mov ah, 0x4f        ;VBE
 mov al, 0x02        ;Set VBE Videomode
-mov bx, 0xC11C      ;video mode 1600x1200x8  0x011C
-;mov bx, 0xC107      ;video mode 1280x1024x8  0x0107
-int 10h
+;mov bx, 0x411C      ;video mode 1600x1200x8  0x011C
+mov bx, 0x4107      ;video mode 1280x1024x8  0x0107
+int 0x10
 
+getvidinfo:
+mov ah, 0x4f        ;VBE
+mov al, 0x01        ;Get VBE Videomode
+mov cx, 0x4107      ;Video Mode
+mov bx, 0x0000
+mov es, bx
+mov di, [GraphicsInfo]
+int 0x10
+
+cmp ax, 0x004f
+jne error
+
+disableA20:
 mov ax, 0x2401
-int 0x15            ;enable A20
+int 0x15                    ;enable A20
 
 cli                         ;disable Interrupts != sti
 lgdt [GDT_Descriptor]       ;load gdt
@@ -62,6 +74,7 @@ mov eax, cr0
 or eax, 1
 mov cr0, eax                ;letztes Bit von cr0 -> 1, enables 32bit
 jmp CODE_SEG:start_protected_mode
+
 
 GDT_Start:
     null_descriptor:
@@ -87,6 +100,72 @@ GDT_Descriptor:
     dw GDT_End - GDT_Start - 1  ;size
     dd GDT_Start                ;pointer to start 
 
+
+GraphicsInfo:
+        dw 0x0550
+    GraphicsGeneral:
+        dw 0                ;modeattributes
+        dw 0                ;Window A&B
+        dw 0                ;Window Granularity
+        dw 0                ;Window Size
+        dw 0                ;Start Seg WinA
+        dw 0                ;Start Seg WinB
+        dd 0                ; Far Window Pos
+        dw 0                ;Bytes per Scanline
+    GraphicsVESA1:
+        dw 0                ;Width
+        dw 0                ;Hight
+        db 0                ;Hight of Cell
+        db 0                ;Width of cell
+        db 0                ;number of mem planes
+        db 0                ;number of bits per pixel
+        db 0                ;number of banks
+        db 0                ;memory type model
+        db 0                ;size of bank in kb
+        db 0                ;number of image pages
+        db 0                ;reserved
+    GraphicsVESA12:
+        db 0                ;RedMask
+        db 0                ;Red field pos
+        db 0                ;GreenMask
+        db 0                ;Green field pos
+        db 0                ;BlueMask
+        db 0                ;Blue field pos
+        db 0                ;ResMask
+        db 0                ;Res field pos
+        db 0                ;direct color mode
+    GraphicsVESA2:
+        dd 0                ;physical address LVB
+        dd 0                ;pointer offscreen memory
+        dw 0                ;kb offscreen momory
+    GraphicsVESA3:
+        dw 0                ;bytes per scanline
+        db 0                ;number of images for banked
+        db 0                ;number of images for linear
+        db 0                ;direct color red mask
+        db 0                ;direct color red LSB
+        db 0                ;direct color green mask
+        db 0                ;direct color green LSB
+        db 0                ;direct color blue mask
+        db 0                ;direct color blue LSB
+        db 0                ;direct color res mask
+        db 0                ;direct color res LSB
+GraphicsEnd:
+Reserve:
+    dd 0
+    dd 0
+    dd 0
+
+error:
+mov ax, 0x0000
+int 0x10
+
+errora:
+mov ax, 0x0A35
+int 0x10
+jmp errora
+
+
 [bits 32]
 start_protected_mode:
 
@@ -103,20 +182,17 @@ mov esp, edx
 mov edi, esi
 
 printvbe:
-    mov ecx, 0xFFFFF
+    mov ecx, 0x1D4C00
     mov al, 0x25
-    mov ebx, 0xA0000
-    mov edi, 0x2BF52
+    mov ebx, dword 0x0000057A
     forprintvbe:
-        mov [edi], al
-        ; inc al
-        inc edi
+        mov [ebx], al
+        inc ebx
         dec ecx
         cmp ecx, 0
         jne forprintvbe
 
 hlt
-
 
 
 ReadFloppy:

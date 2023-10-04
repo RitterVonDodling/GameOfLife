@@ -1,7 +1,8 @@
 00000000  B9004C            mov cx,0x4c00
 00000003  1D00B0            sbb ax,0xb000
-00000006  00A20000          add [bp+si+0x0],ah
-0000000A  A000FE            mov al,[0xfe00]
+00000006  25A200            and ax,0xa2
+00000009  000A              add [bp+si],cl
+0000000B  00FE              add dh,bh
 0000000D  C04981F9          ror byte [bx+di-0x7f],byte 0xf9
 00000011  0000              add [bx+si],al
 00000013  0000              add [bx+si],al
