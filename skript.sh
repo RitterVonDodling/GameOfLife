@@ -95,6 +95,6 @@ then
     ndisasm -b 16 STARTUP.BIN > debug_info/diasm.txt
     qemu-system-i386 -s -S -m 4G -drive if=floppy,index=0,format=raw,file=$IMAGEFILE
 else
-    qemu-system-i386 -vga std $DEMOFLAG -m 4G -drive if=floppy,index=0,format=raw,file=$IMAGEFILE
+    qemu-system-i386 -display gtk,zoom-to-fit=on -vga std $DEMOFLAG -m 4G -drive if=floppy,index=0,format=raw,file=$IMAGEFILE
 fi
 

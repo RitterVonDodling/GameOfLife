@@ -3,33 +3,46 @@
 ;   0x0502 speicherort RNG
 ;   0x0504 Speicherort PosMask
 ;   0x0506 - 0x0508 Zwischenspeicher Calcraster
-;   0x050C - 0x050D Zwischenspeicher Iteration Calcraster
-;   0x050E SEED
-;   0x0510 S2
-;   0x0512 S3
+;   0x050C - 0x050F Zwischenspeicher Iteration Calcraster
+;   0x0510 SEED
+;   0x0512 S2
+;   0x0514 S3
+;   0x0550 - 0x0600 Graphics Info
+;   0x0578 - 0x057B LSB Address
 ;   0x0600 - 0x0900 Programm
 ;0x07C00 - 0x07DFF Verweis Bootloader
 ;0x07E00 -- 0x9FFFF verfügbarer Speicher
 ;   => Golzwischenspeicher
-;   => 0x10000 -- 0x50000 für 1600*1200/8 Einträge
-;   => 0x50000 -- 0x60000 für calcraster Anteil
-;   => 0x90000 -- 0x9FFFF für stack
+;   => 0x00010000 -- 0x00050000 für 1600*1200/8 Einträge
+;   => 0x00050000 -- 0x00090000 für calcraster Anteil
+;   => 0x00090000 -- 0x0009FFFF für stack
 
-;Breite 200 Byte
+;Breite 150 Byte
 ;Gesamtanzahl Benötigter Speicher 240.000 = 0x3A980
 
-%define OFFSET 0x00000800
+%define OLDRASTER 0x00010000
+%define NEWRASTER 0x00050000
+%define DIFFOLDRASTER (NEWRASTER - OLDRASTER)
 %define RNGADDR 0x00000502
-%define SEEDADDR 0x0000050E
-%define S2ADDR 0x00000510
-%define S3ADDR 0x00000512
+%define SEEDADDR 0x00000510
+%define S2ADDR   0x00000512
+%define S3ADDR   0x00000514
 %define RMUL 39157
 %define RADD 43973
 %define RDIV 30539
+%define ITERATIONS (1600*1200/8)
 
 [BITS 32]
 
-jmp start
+start:
+call initraster
+mainloop:
+call printvbe
+; call kbread
+call calcraster
+call cpraster
+; jmp start
+jmp mainloop
 
 randint:
 ; ; Wichmann–Hill PRNG
@@ -45,9 +58,6 @@ randint:
 ; ;       s2 = SEED*SEED[8-24]
 ; ;       s3 = S2*S2[8-24]
 
-    push es
-    mov ax, 0x0000                  ;offset auf 0
-    mov es, ax
     ; AB HIER S1 S2 und S3 bestimmen
     xor ax, ax
     mov ax, [SEEDADDR]              ;Lädt SEED aus RAM
@@ -142,141 +152,109 @@ randint:
     mov [SEEDADDR], bx
     ; mov ax, 0x0808
     mov [RNGADDR], ax               ;Speicher RNG
-    pop es
     ret
 
-
-start:
-setupstack:
-    ; mov ax, 0x9000
-    ; mov ss, ax
-    ; mov esp, 0x90000000
-
 initraster:
-    mov cx, 0x9600
+    mov ecx, ITERATIONS
     forinitraster:
-        push cx
+        push ecx
         call randint
-        pop cx
-        dec cx
-        ; mov bx, cx
-        ; mov di, cx
-        ; push ds
-        ; mov ax, 0x0000
-        ; mov ds, ax
-        ; mov dx, [RNGADDR]    ;LOAD RANDINT
-        ; mov ax, OFFSET
-        ; mov es, ax
-        ; mov [di], dx
-        ; pop ds
-        ; cmp cx, 0
+        ;RNG in ax
+        xor ecx, ecx
+        pop ecx
+        mov edi, ecx
+        add edi, OLDRASTER
+        mov [edi], al
+        dec ecx
+        cmp ecx, 0
         jnz forinitraster
+    ret
 
+;16 Colors
+;0x00 Black
+;0x01 Blue
+;0x04 Red
+;0x0E Yellow
+;0x0F White
 
 printvbe:
-    mov ecx, 0x1D4C00
-    mov al, 0x12
-    mov ebx, dword [0x00000578]
+    mov ecx, ITERATIONS
+    mov edx, OLDRASTER
+    mov esi, edx
+    mov ebx, dword [0x00000578]     ; LOAD LSB Address
     forprintvbe:
-        mov [ebx], al
-        inc ebx
+        xor edx, edx
+        mov dl, [esi]
+        push ecx
+        xor ecx, ecx
+        mov cx, 8
+        forprintbit:
+            dec cx
+            xor dh, dh
+            mov dh, 1
+            and dh, dl
+            mov al, 0x0F
+            mul dh
+            mov [ebx], al
+            inc ebx
+            shr dl, 1
+            cmp cx, 0 
+            jnz forprintbit
+        xor ecx, ecx
+        pop ecx
+        inc esi
         dec ecx
         cmp ecx, 0
         jne forprintvbe
-jmp printvbe
-
-;16 Farben
-;0x00 Schwarz
-;0x01 Blau
-;0x04 Rot
-;0x0E Gelb
-;0x0F Weiß
-
-
-
-
-
-
-printvv:
-    mov cx, 0x9600      ;38400 in Dez       
-    mov ebx, 0xA0000      ;SEGMENT GRFMEM
-    mov es, bx          ;
-    mov bx, OFFSET      ;
-    push ds
-    push si
-    mov ds, bx
-    xor bx, bx
-    mov di, cx
-    mov si, cx
-    mov dx, 0x03C4      ;i/o port für VGA
-    mov ax, 0x0F02      ;ah Farbe, al Kommando Bitlane (02 = write)
-    out dx, ax          ;gebe ax an port dx aus
-    forprintvv:
-        sub di, 2
-        sub si, 2
-        mov bx, [si]     ;bx <- [CELL]
-        mov [0x00000578], bx     ;[GRF] <- bx
-        cmp di, 0
-        jne forprintvv
-    pop si
-    pop ds
-
-; hlt
-    ; call kbhit
+    ret
 
 calcraster:
-    mov cx, 0x9600
+    mov ecx, ITERATIONS
     forcalcraser:
-        dec cx
-        mov bx, 0x0000
-        mov es, bx
-        mov bx, 0x050C      ;SPEICHERORT iteration
-        mov di, bx
-        mov [di], cx     ;SAVE iteration
+        dec ecx
         ;START XOR
-        mov bx, OFFSET      ;OFFSET CELL
-        mov es, bx
-        mov di, cx
-        mov ax, 0x0000
-        mov bx, 0x0000
-        mov dx, 0x0000
+        mov edi, ecx
+        add edi, OLDRASTER
+        xor eax, eax
+        xor ebx, ebx
+        xor edx, edx
         ;cmp cx, 81
         ;jl xorpunktobenmitte
-        mov ax, [di-81]  ;cx -81 = obenlinks
+        mov ax, [edi-201]  ;cx -81 = obenlinks
         ror ax, 1          ;N1 in ah
         xorpunktobenmitte:
         ;cmp cx, 80
         ;jl xorpunktlinks
-        mov bl, [di-80]  ;N2 in bl obenmitte
+        mov bl, [edi-200]  ;N2 in bl obenmitte
         xor ah, bl          ;x1 in ah
-        mov bx, [di-80]  ;obenrechts
+        mov bx, [edi-200]  ;obenrechts
         rol bx, 1           ;N3 in bl
         xorpunktlinks:
         ;cmp cx, 0
         ;je xorpunktmitte
-        mov dx, [di-1]   ;links
+        mov dx, [edi-1]   ;links
         ror dx, 1           ;N4 in dh
         xorpunktmitte:
         xor bl, dh          ;x2 in bl
         mov al, ah          ;cp x1 in al
         and ah, bl          ;xa1 in ah
         xor al, bl          ;xx1 in al
-        mov bx, 0x0000
-        mov dx, 0x0000
+        xor ebx, ebx
+        xor edx, edx
         ;cmp cx, 38399
         ;je xorpunktladenende  ;
         xorpunktrechts:
-        mov bx, [di]     ;rechts
+        mov bx, [edi]     ;rechts
         rol bx, 1           ;N5 in bl
-        mov dx, [di+79]  ;untenlinks
+        mov dx, [edi+199]  ;untenlinks
         ror dx, 1           ;N6 in dh
         xorpunktuntenlinks:
         ;cmp  cx, 38321
         xor bl, dh          ;x3 in bl
         ;cmp cx, 38320
         ;jge xorpunktletztezeile
-        mov bh, [di+80]  ;N7 in bh untenmitte
-        mov dx, [di+80]  ;untenrechts
+        mov bh, [edi+200]  ;N7 in bh untenmitte
+        mov dx, [edi+200]  ;untenrechts
         rol dx, 1           ;N8 in dl
         xorpunktletztezeile:
         xor bh, dl          ;x4 in bh
@@ -288,48 +266,46 @@ calcraster:
         mov bh, al          ;cp xx1 in bh
         and al, dh          ;xxa1 in al
         xor bh, dh          ;xxx1 in bh
-        push cx             ;PUSH 3 -> 0xEE   
-        mov cx, 0x0000
-        mov es, cx
-        mov cx, 0x0506      ;zwischenspeicher 1
-        mov di, cx
-        mov [di], bh     ;xxx1 -> 0x0506
-        mov [di+1], al   ;xxa1 -> 0x0507
-        mov [di+2], ah   ;xax1 -> 0x0508
+        push ecx             ;PUSH 3 -> 0xEE
+        xor ecx, ecx
+        mov ecx, 0x00000506      ;zwischenspeicher 1
+        mov edi, ecx
+        mov [edi], bh     ;xxx1 -> 0x0506
+        mov [edi+1], al   ;xxa1 -> 0x0507
+        mov [edi+2], ah   ;xax1 -> 0x0508
         ;ENDE XOR BLOCK
         ;START AND BLOCK
-        mov cx, OFFSET
-        mov es, cx
-        pop cx              ;POP 3 <- SP 0xEE   
-        mov di, cx
+        pop ecx              ;POP 3 <- SP 0xEE   
+        mov edi, ecx
+        add edi, OLDRASTER
         ;cmp cx, 81
         ;jl andpunktobenmitte
-        mov ax, [di-81]  ;obenlinks
+        mov ax, [edi-201]  ;obenlinks
         ror ax, 1           ;N1 in ah
-        mov bl, [di-80]  ;N2 in bl obenmitte
+        mov bl, [edi-200]  ;N2 in bl obenmitte
         and ah, bl          ;a1 in ah
         andpunktobenmitte:
         ;cmp cx, 80
         ;jl andpunktlinks
-        mov bx, [di-80]  ;obenrechts
+        mov bx, [edi-200]  ;obenrechts
         rol bx, 1           ;N3 in bl
         andpunktlinks:
         ;cmp cx, 0
         ;je andpunktrechts
-        mov dx, [di-1]   ;links
+        mov dx, [edi-1]   ;links
         ror dx, 1           ;N4 in dh
         and bl, dh          ;a2 in bl
         mov al, ah          ;cp a1 -> al
         and ah, bl          ;aa1 in ah
         xor al, bl          ;ax1 in al
         andpunktrechts:
-        mov bx, [di]     ;rechts
+        mov bx, [edi]     ;rechts
         rol bx, 1           ;N5 in bl
-        mov dx, [di+79]  ;untenlinks
+        mov dx, [edi+199]  ;untenlinks
         ror dx, 1           ;N6 in dh
         and bl, dh          ;a3 in bl
-        mov bh, [di+80]  ;N7 in bh untenmitte
-        mov dx, [di+80]  ;untenrechts
+        mov bh, [edi+200]  ;N7 in bh untenmitte
+        mov dx, [edi+200]  ;untenrechts
         rol dx, 1           ;N8 in dl
         mov dh, bl          ;cp a3 -> dh
         and bh, dl          ;a4 in bh
@@ -341,20 +317,17 @@ calcraster:
         xor bl, dh          ;axx1 in bl
         ;ENDE AND BLOCK
         ;START AND MASK
-        push cx             ;PUSH 4 -> SP 0xEE 
-        mov cx, 0x0000
-        mov es, cx
-        mov cx, 0x0508
-        mov di, cx
-        mov bh, [di]     ;xax1 in bh
+        push ecx             ;PUSH 4 -> SP 0xEE Iteration
+        xor ecx, ecx
+        mov ecx, 0x00000508
+        mov edi, ecx
+        mov bh, [edi]       ;xax1 in bh
         mov dh, bh          ;cp xax1 in dh
         xor bh, bl          ;ANDx1 in bh
-        mov dl, [di-1]   ;xxa1 in dl
+        mov dl, [edi-1]     ;xxa1 in dl
         xor bh, dl          ;ANDxx1 in bh
-        mov dl, [di-2]   ;xxx1 in dl
-        mov cx, OFFSET
-        mov es, cx
-        pop cx              ;POP 4 <- SP 0xEE
+        mov dl, [edi-2]     ;xxx1 in dl
+        pop ecx             ;POP 4 <- SP 0xEE Iteration -> ecx
         not dl              ;invert xxx1
         and bh, dl          ;ANDxxa1 in bh
         not ah              ;ANDn2 in ah
@@ -373,46 +346,62 @@ calcraster:
         ;AND MASK
         ;OR MASK
         ;neue an anderer addresse speichern
-        mov dx, 0x0000
-        mov es, dx
-        mov dx, 0x050C
-        mov di, dx
-        mov cx, [di]     ;LOAD Iteration CX = +-0
-        mov di, cx
-        mov dx, OFFSET
-        mov es, dx
-        mov al, [di]     ;ALTE CELL
+        mov edi, ecx
+        mov esi, ecx
+        add edi, NEWRASTER
+        add esi, OLDRASTER
+        mov al, [esi]       ;ALTE CELL
         and al, bh
-        or al, bl           ;NEUE CELL
-        mov dx, 0x1200
-        mov es, dx
-        mov [di], al     ;Speichere neue cell
-        cmp cx, 0
+        or al, bl           ;NEUE CELL 
+        mov [edi], al       ;Speichere neue cell
+        cmp ecx, 0
         jne forcalcraser
+    ret
 
 cpraster:
-    push ds
-    push si
-    mov cx, 0x9600
-    mov di, cx
-    mov si, cx
-    mov dx, 0x1200
-    mov es, dx
-    mov dx, OFFSET
-    mov ds, dx
+    mov ecx, ITERATIONS
+    mov edi, ecx
+    mov esi, ecx
+    add edi, NEWRASTER
+    add esi, OLDRASTER
     forcpraser:
-        sub si, 2
-        sub di, 2
-        mov ax, [di]     ;ax <- [NEW CELL]
-        mov [si], ax     ;[CELL] <- ax
-        cmp di, 0
+        dec edi
+        dec esi
+        dec ecx
+        mov al, [edi]     ;al <- [NEW CELL]
+        mov [esi], al     ;[OLD CELL] <- al
+        cmp ecx, 0
         jne forcpraser
-    pop si
-    pop ds
+    ret
 
-jmp printvv
+;for testing only -- increases OLDRASTER BY ONE AND SAVES IT IN NEWRASTER
+incraster:
+    mov ecx, ITERATIONS
+    mov edi, ecx
+    add edi, OLDRASTER
+    mov esi, ecx
+    add esi, NEWRASTER
+        forincraster:
+            mov al, [edi]
+            inc al
+            mov [esi], al
+            dec edi
+            dec esi
+            cmp edi, OLDRASTER
+            jne forincraster
+    ret
 
-; kbhit:
-; 	mov ah, 0x00	; read keyboard, blocking
-; 	int 0x16
-; 	ret
+kbread:
+    mov dx, 0x0060
+    xor eax, eax
+    in al, dx       ;lese Port dx nach al 
+    mov ah, 1
+    and al, ah
+    cmp al, 0
+    je kbread
+    ;Ab hier keyboard status reset
+    mov dx, 0x0060
+    xor ax, ax
+    mov al, 0x01
+    out dx, al
+    ret
