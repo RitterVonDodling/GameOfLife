@@ -1,7 +1,7 @@
 import sys
 
 if sys.argv[1] == "help":
-    print("python3 bincopy.py BinaryFile FloppyImage")
+    print("python3 bincopy.py BinaryFile ImageFile (int)StartingAddress")
     exit()
 
 #initialisiere Variablen

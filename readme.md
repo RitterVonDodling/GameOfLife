@@ -8,18 +8,18 @@ creating a baremetal program for conways game of life
 - cells are not calculated individually, but 8 at a time
 
 ## status
-- not working
-- fiddeling with vesa and protected mode
+- working
 - comments are mostly in german, change incoming
 
 ## if you want to run it
 1. compile main.s:
 <br   />nasm -f bin -g -O0 -o STARTUP.BIN main.s
 2. compile boot.s
-<br   />nasm -f bin -g -O0 -o BOOT.BIN boot.s
+<br   />nasm -f bin -g -O0 -o BOOT.BIN protected.s
 3. put  BOOT.BIN & STARTUP.BIN on the bootmedium
 <br   />BOOT.BIN from 0 to 512 and STARTUP.BIN from 512 onwards
-<br   />or use your own bootmedium with a custom bootloader (ie Alexfru's fat12 bootloader)
+<br   />you can use the bincopy.py program to do that for you, take a look into skript.sh how to use it
+<br   />or use your own bootmedium with a custom bootloader
 4. run a vm with your bootmedium in your favorite x86 capable virtualizer
 <br   />e.g qemu with: qemu-system-i386 -vga std -m 1024k -drive if=floppy,index=0,format=raw,file=floppy.img
 

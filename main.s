@@ -191,13 +191,13 @@ printvbe:
         forprintbit:
             dec cx
             xor dh, dh
+            rol dl, 1
             mov dh, 1
             and dh, dl
             mov al, 0x0F
             mul dh
             mov [ebx], al
             inc ebx
-            shr dl, 1
             cmp cx, 0 
             jnz forprintbit
         xor ecx, ecx
