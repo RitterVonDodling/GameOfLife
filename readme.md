@@ -4,11 +4,13 @@ creating a baremetal program for conways game of life
 ## goal
 - create a program that runs cgol in 1600x1200 cells, written in x86 assembly
 - 32bit protected mode
-- singlethread
+- multicore
+- multithread
+- threadpool
 - cells are not calculated individually, but 8 at a time
 
 ## status
-- working
+- not working
 - comments are mostly in german, change incoming
 
 ## if you want to run it
@@ -27,7 +29,11 @@ creating a baremetal program for conways game of life
 in help/ are files with general information for problem solving
 
 ## old
-in old/ are older working versions for ax 0x0013 int0x10 320x240 and 0x0012 int0x10 640x480
+in old/ are older working versions for 
+<br/>ax 0x0013 int0x10 320x240 
+<br/>0x0012 int0x10 640x480
+<br/>boot.s bootloader for 16 bit realmode
+<br/>protected.s bootloader for 32bit protected mode
 
 ## util
 in util/ are some little helper programs in python for debugging and easy manipulation of the .img Files
