@@ -34,6 +34,7 @@ in old/ are older working versions for
 <br/>0x0012 int0x10 640x480
 <br/>boot.s bootloader for 16 bit realmode
 <br/>protected.s bootloader for 32bit protected mode
+<br/>main32bitSingle.s Mainfile for 32 bit Singlethread, needs protected.s as bootloader
 
 ## util
 in util/ are some little helper programs in python for debugging and easy manipulation of the .img Files

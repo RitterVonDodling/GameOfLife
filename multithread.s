@@ -1,9 +1,16 @@
 ; - launch intp protected mode
 ; - wake APs
+;       get APIC Base Address
+;       Copy Payload
 ;       run INIT-SIPI-SIPI sequence
 ; - init and differentiate APs
-; 
-
+; - jmp to payload
+;       StackPointer = 0
+;       ClearDirFlag
+;       Get Index of APs under lock
+;       Set Stack for APs (index x 0x1000 + Offset)
+;       Set Vektor for APs
+; - Run Code from Vektor Address(0xVV000 + Offset)
 
 
 [org 0x7c00]
