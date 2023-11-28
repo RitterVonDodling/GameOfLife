@@ -33,6 +33,7 @@
 %define ITERATIONS (1600*1200/8)
 
 [BITS 32]
+[org 0x7e00]
 
 start:
 call initraster
@@ -41,7 +42,13 @@ call printvbe
 ; call kbread
 call calcraster
 call cpraster
-; jmp start
+    xor al, al
+    mov al, BYTE[Counter]
+    dec al
+    test al, al
+    mov BYTE[Counter], al
+    jz stop
+
 jmp mainloop
 
 randint:
@@ -209,6 +216,7 @@ printvbe:
     ret
 
 calcraster:
+
     mov ecx, ITERATIONS
     forcalcraser:
         dec ecx
@@ -372,24 +380,9 @@ cpraster:
         mov [esi], al     ;[OLD CELL] <- al
         cmp ecx, 0
         jne forcpraser
+    
     ret
 
-;for testing only -- increases OLDRASTER BY ONE AND SAVES IT IN NEWRASTER
-incraster:
-    mov ecx, ITERATIONS
-    mov edi, ecx
-    add edi, OLDRASTER
-    mov esi, ecx
-    add esi, NEWRASTER
-        forincraster:
-            mov al, [edi]
-            inc al
-            mov [esi], al
-            dec edi
-            dec esi
-            cmp edi, OLDRASTER
-            jne forincraster
-    ret
 
 kbread:
     mov dx, 0x0060
@@ -405,3 +398,12 @@ kbread:
     mov al, 0x01
     out dx, al
     ret
+
+stop:
+    hlt
+    hlt
+    jmp stop
+
+    
+Counter:
+    db 0x0f

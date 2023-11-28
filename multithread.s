@@ -1,100 +1,11 @@
-;set GDT wer wo was
-;flat memory model
-;Code Segement descriptor 1001
-    ;Present 1
-    ;Privilige 00 ring höchst priviligiert
-    ;Type 1 code segment
-    ;Start 0  Base
-    ;Größe 0xfffff Limit
-    ;Flags
-        ;Type Flags 1010
-            ;enthält Code 1
-            ;Conforming 0 niedere privilegien können nicht zugreifen
-            ;readable 1
-            ;accessed 0 wird durch cpu auf 1 gesetzt, wenn in nutzung
-        ;Other Flags 1100
-            ;Granularität 1 Limit * 0x1000 => zugriff auf volle 4GB RAM
-            ;32 bit? 1
-            ;00 unused
-
-;Data Segment descriptor 1001
-    ;Present 1
-    ;Privilige 00 ring höchst priviligiert
-    ;Type 1 code segment
-    ;Start 0  Base
-    ;Größe 0xfffff Limit
-    ;Flags
-        ;Type Flags 0010
-            ;enthält Code 0
-            ;direction 0 
-            ;writeable 1
-            ;accessed 0 wird durch cpu auf 1 gesetzt, wenn in nutzung
-        ;Other Flags
-            ;Granularität 1 Limit * 0x1000 => zugriff auf volle 4GB RAM
-            ;32 bit? 1
-            ;00 unused
-;db def byte 8bit
-;dw def word 16bit
-;dd def double 32bit
+; - launch intp protected mode
+; - wake APs
+;       run INIT-SIPI-SIPI sequence
+; - init and differentiate APs
+; 
 
 
-; GraphicsInfo:
-;         dw 0x0550
-;     GraphicsGeneral:
-;         dw 0                ;modeattributes
-;         dw 0                ;Window A&B
-;         dw 0                ;Window Granularity
-;         dw 0                ;Window Size
-;         dw 0                ;Start Seg WinA
-;         dw 0                ;Start Seg WinB
-;         dd 0                ;Far Window Pos
-;         dw 0                ;Bytes per Scanline
-;     GraphicsVESA1:
-;         dw 0                ;Width
-;         dw 0                ;Hight
-;         db 0                ;Hight of Cell
-;         db 0                ;Width of cell
-;         db 0                ;number of mem planes
-;         db 0                ;number of bits per pixel
-;         db 0                ;number of banks
-;         db 0                ;memory type model
-;         db 0                ;size of bank in kb
-;         db 0                ;number of image pages
-;         db 0                ;reserved
-;     GraphicsVESA12:
-;         db 0                ;RedMask
-;         db 0                ;Red field pos
-;         db 0                ;GreenMask
-;         db 0                ;Green field pos
-;         db 0                ;BlueMask
-;         db 0                ;Blue field pos
-;         db 0                ;ResMask
-;         db 0                ;Res field pos
-;         db 0                ;direct color mode
-;     GraphicsVESA2:
-;         dd 0                ;physical address LVB
-;         dd 0                ;pointer offscreen memory
-;         dw 0                ;kb offscreen momory
-;     GraphicsVESA3:
-;         dw 0                ;bytes per scanline
-;         db 0                ;number of images for banked
-;         db 0                ;number of images for linear
-;         db 0                ;direct color red mask
-;         db 0                ;direct color red LSB
-;         db 0                ;direct color green mask
-;         db 0                ;direct color green LSB
-;         db 0                ;direct color blue mask
-;         db 0                ;direct color blue LSB
-;         db 0                ;direct color res mask
-;         db 0                ;direct color res LSB
-; GraphicsEnd:
-; Reserve:
-;     dd 0
-;     dd 0
-;     dd 0
 
-
-;Bootloader Address
 [org 0x7c00]
 
 ;equ == const
